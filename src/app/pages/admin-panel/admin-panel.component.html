@@ -1,0 +1,422 @@
+<div class="app-layout">
+
+  <aside class="sidebar">
+    <div class="sidebar-brand">
+      <div class="brand-icon">Ψ</div>
+      <div class="brand-text"><h2>PsicoYA</h2><span>Gestión Clínica</span></div>
+    </div>
+
+    <nav class="sidebar-menu" aria-label="Principal">
+      <a class="nav-item" *ngFor="let m of menu" role="button" tabindex="0" [class.active]="vistaActual === m.id"
+         [attr.aria-current]="vistaActual === m.id ? 'page' : null" (click)="cambiarSeccion(m.id)" (keydown.enter)="cambiarSeccion(m.id)">
+        <span class="nav-icon" aria-hidden="true">{{ m.icono }}</span><span>{{ m.label }}</span>
+      </a>
+    </nav>
+
+    <div class="user-card" role="button" tabindex="0" title="Cerrar sesión" (click)="logout()" (keydown.enter)="logout()">
+      <div class="user-avatar">{{ psicologoIniciales }}</div>
+      <div class="user-info"><p class="user-name">{{ psicologoNombre }}</p><p class="user-role">Psicóloga clínica</p></div>
+      <span class="logout-icon" *ngIf="!loggingOut" aria-hidden="true">↪</span>
+      <span class="mini-spinner" *ngIf="loggingOut"></span>
+    </div>
+  </aside>
+
+  <main class="main-content">
+
+    <header class="top-bar">
+      <div class="search-box" *ngIf="vistaActual === 'dashboard' || vistaActual === 'pacientes'">
+        <span class="search-icon" aria-hidden="true">⌕</span>
+        <input type="search" placeholder="Buscar paciente, DNI u obra social" aria-label="Buscar paciente" [(ngModel)]="searchTerm">
+      </div>
+      <h2 class="view-title" *ngIf="vistaActual !== 'dashboard' && vistaActual !== 'pacientes'">{{ titulos[vistaActual] }}</h2>
+      <button type="button" class="btn-primary" (click)="accionPrincipal()">
+        <span aria-hidden="true">＋</span><span>{{ acciones[vistaActual].label }}</span>
+      </button>
+    </header>
+
+    <div *ngIf="vistaActual === 'dashboard'">
+      <section class="stats-grid" aria-label="Resumen">
+        <div class="stat-card clickable" (click)="cambiarSeccion('pacientes')">
+          <div class="stat-icon purple" aria-hidden="true">♙</div>
+          <div><span class="stat-value">{{ pacientesActivos }}</span><span class="stat-label">Pacientes activos</span></div>
+        </div>
+        <div class="stat-card clickable" (click)="cambiarSeccion('agenda')">
+          <div class="stat-icon blue" aria-hidden="true">▦</div>
+          <div><span class="stat-value">{{ turnosHoyActivos }}</span><span class="stat-label">Turnos de hoy</span></div>
+        </div>
+        <div class="stat-card clickable" (click)="cambiarSeccion('documentos')">
+          <div class="stat-icon green" aria-hidden="true">▤</div>
+          <div><span class="stat-value">{{ informesCargados }}</span><span class="stat-label">Documentos / informes</span></div>
+        </div>
+        <div class="stat-card clickable" (click)="cambiarSeccion('pagos')">
+          <div class="stat-icon amber" aria-hidden="true">＄</div>
+          <div><span class="stat-value">{{ pagosPendientesCount }}</span><span class="stat-label">Pagos pendientes</span></div>
+        </div>
+      </section>
+
+      <section class="table-card">
+        <div class="table-header">
+          <div><h3>Agenda de hoy</h3><p>{{ turnosHoyActivos }} turnos activos</p></div>
+          <button type="button" class="action-btn" (click)="cambiarSeccion('agenda')">Ver agenda</button>
+        </div>
+        <ul class="ag-list">
+          <li *ngFor="let t of turnosHoy">
+            <button type="button" class="ag-item" (click)="elegirTurno(t); cambiarSeccion('agenda')">
+              <span class="ag-time">{{ hora(t) }}</span>
+              <span class="ag-item__main"><b>{{ nombreTurno(t) }}</b><small>{{ t.observaciones || 'Sin observaciones' }}</small></span>
+              <span class="ag-state" [ngClass]="'est-' + t.estado">{{ cap(t.estado) }}</span>
+            </button>
+          </li>
+          <li class="ag-empty" *ngIf="!turnosHoy.length">No tenés turnos para hoy.</li>
+        </ul>
+      </section>
+
+      <section class="table-card">
+        <div class="table-header">
+          <div><h3>Pacientes</h3><p>Acceso rápido al expediente digital</p></div>
+          <button type="button" class="action-btn" (click)="cambiarSeccion('pacientes')">Ver todos</button>
+        </div>
+        <div class="table-responsive">
+          <table>
+            <thead><tr><th>Paciente</th><th>Edad / Escolaridad</th><th>Obra social / Pago</th><th>Estado</th></tr></thead>
+            <tbody>
+              <tr *ngFor="let p of pacientesFiltrados | slice:0:5">
+                <td><div class="patient-name">{{ p.nombre }} {{ p.apellido }}</div><div class="patient-sub">{{ p.telefono || 'Sin teléfono' }}</div></td>
+                <td>{{ edadDe(p) ? edadDe(p) + ' años' : '-' }} / {{ p.escolaridad || '-' }}</td>
+                <td><span class="badge-payment">{{ p.obra_social || p.modalidad_pago || 'Particular' }}</span></td>
+                <td><span class="badge-status" [ngClass]="claseEstado(p.estado)">{{ p.estado }}</span></td>
+              </tr>
+              <tr *ngIf="!pacientes.length"><td colspan="4" class="empty-row">No hay pacientes cargados aún.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+
+    <div *ngIf="vistaActual === 'pacientes'">
+      <section class="table-card">
+        <div class="table-header">
+          <div><h3>Directorio de pacientes</h3><p>{{ pacientesFiltrados.length }} resultados</p></div>
+          <select [(ngModel)]="filtroEstado" aria-label="Filtrar por estado">
+            <option value="todos">Todos los estados</option>
+            <option value="En tratamiento">En tratamiento</option>
+            <option value="Alta">Alta</option>
+            <option value="Abandono">Abandono</option>
+          </select>
+        </div>
+        <div class="table-responsive">
+          <table>
+            <thead><tr><th>Paciente</th><th>Edad</th><th>Teléfono</th><th>Escolaridad</th><th>Obra social / Pago</th><th>Estado</th><th>Acciones</th></tr></thead>
+            <tbody>
+              <tr *ngFor="let p of pacientesFiltrados">
+                <td>
+                  <div class="patient-name">{{ p.nombre }} {{ p.apellido }}</div>
+                  <div class="patient-sub">{{ p.es_menor ? 'Tutor: ' + p.tutor_nombre : (p.dni ? 'DNI ' + p.dni : 'Sin DNI') }}</div>
+                </td>
+                <td>{{ edadDe(p) ? edadDe(p) + ' años' : '-' }}</td>
+                <td>{{ p.telefono || '-' }}</td>
+                <td>{{ p.escolaridad || '-' }}</td>
+                <td><span class="badge-payment">{{ p.obra_social || p.modalidad_pago || 'Particular' }}</span></td>
+                <td><span class="badge-status" [ngClass]="claseEstado(p.estado)">{{ p.estado || 'En tratamiento' }}</span></td>
+                <td><button type="button" class="action-btn" (click)="editarEstadoPaciente(p)">Cambiar estado</button></td>
+              </tr>
+              <tr *ngIf="!pacientesFiltrados.length"><td colspan="7" class="empty-row">No se encontraron pacientes.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+
+    <div *ngIf="vistaActual === 'agenda'" class="ag-layout">
+      <section class="ag-card" aria-label="Calendario mensual">
+        <div class="ag-toolbar">
+          <div class="ag-nav">
+            <button type="button" class="ag-btn" (click)="irMes(-1)" aria-label="Mes anterior">&lsaquo;</button>
+            <button type="button" class="ag-btn" (click)="irMes(1)" aria-label="Mes siguiente">&rsaquo;</button>
+            <button type="button" class="ag-btn ag-btn--text" (click)="irHoy()">Hoy</button>
+          </div>
+          <h3 class="ag-month">{{ tituloMes }}</h3>
+        </div>
+        <div class="ag-weekdays"><span *ngFor="let w of semana">{{ w }}</span></div>
+        <div class="ag-grid" role="grid">
+          <div class="ag-day" role="gridcell" tabindex="0" *ngFor="let d of diasMes" [class.is-out]="!esMes(d)" [class.is-today]="esHoy(d)"
+               [class.is-sel]="esSel(d)" (click)="elegirDia(d)" (keydown.enter)="elegirDia(d)">
+            <span class="ag-num">{{ d.getDate() }}</span>
+            <ng-container *ngIf="turnosDe(d) as lista">
+              <div class="ag-events">
+                <button type="button" class="ag-event" *ngFor="let t of lista.slice(0, 2)" [ngClass]="'est-' + t.estado" (click)="elegirTurno(t, $event)">
+                  <b>{{ hora(t) }}</b> {{ nombreTurno(t) }}
+                </button>
+                <span class="ag-more" *ngIf="lista.length > 2">+{{ lista.length - 2 }} más</span>
+              </div>
+              <div class="ag-dots" *ngIf="lista.length"><i *ngFor="let t of lista.slice(0, 3)" [ngClass]="'est-' + t.estado"></i></div>
+            </ng-container>
+          </div>
+        </div>
+      </section>
+
+      <aside class="ag-side">
+        <section class="ag-card">
+          <header class="ag-card__head">
+            <div><h3 class="ag-card__title">{{ tituloDia }}</h3><p class="ag-card__sub">{{ delDia.length }} {{ delDia.length === 1 ? 'turno' : 'turnos' }}</p></div>
+            <button type="button" class="ag-btn ag-btn--text" (click)="abrir('turno', diaSel)">Agendar</button>
+          </header>
+          <ul class="ag-list">
+            <li *ngFor="let t of delDia">
+              <button type="button" class="ag-item" [class.is-sel]="turnoSel?.id === t.id" (click)="elegirTurno(t)">
+                <span class="ag-time">{{ hora(t) }}</span>
+                <span class="ag-item__main"><b>{{ nombreTurno(t) }}</b><small>{{ t.observaciones || 'Sin observaciones' }}</small></span>
+                <span class="ag-state" [ngClass]="'est-' + t.estado">{{ cap(t.estado) }}</span>
+              </button>
+            </li>
+            <li class="ag-empty" *ngIf="!delDia.length">No hay turnos este día.</li>
+          </ul>
+        </section>
+
+        <section class="ag-card" *ngIf="turnoSel as t">
+          <header class="ag-card__head"><h3 class="ag-card__title">Detalle del turno</h3></header>
+          <div class="ag-person">
+            <span class="ag-avatar" [ngClass]="'est-' + t.estado">{{ nombreTurno(t).charAt(0) }}</span>
+            <div><b>{{ nombreTurno(t) }}</b><small>Paciente</small></div>
+          </div>
+          <dl class="ag-dl">
+            <dt>Fecha</dt><dd>{{ fechaLarga(t) }}</dd>
+            <dt>Horario</dt><dd>{{ rango(t) }}</dd>
+            <dt>Estado</dt><dd><span class="ag-state" [ngClass]="'est-' + t.estado">{{ cap(t.estado) }}</span></dd>
+            <dt>Notas</dt><dd>{{ t.observaciones || 'Sin notas' }}</dd>
+          </dl>
+          <div class="ag-actions">
+            <ng-container *ngFor="let e of estadosTurno">
+              <button type="button" class="ag-action" [ngClass]="'est-' + e" *ngIf="e !== t.estado" (click)="cambiarEstadoTurno(t, e)">{{ accionTurno[e] }}</button>
+            </ng-container>
+          </div>
+        </section>
+      </aside>
+    </div>
+
+    <div *ngIf="vistaActual === 'documentos'">
+      <section class="table-card">
+        <div class="table-header">
+          <div><h3>Documentos e informes</h3><p>{{ documentosFiltrados.length }} resultados · {{ documentos.length }} archivos en total</p></div>
+          <div class="section-search">
+            <span aria-hidden="true">⌕</span>
+            <input type="search" name="buscarDocumentos" [(ngModel)]="searchDocumentos" placeholder="Buscar por paciente o documento..."
+                   aria-label="Buscar documentos por paciente, título o tipo">
+            <button *ngIf="searchDocumentos" type="button" class="search-clear" (click)="searchDocumentos = ''" aria-label="Limpiar búsqueda de documentos" title="Limpiar búsqueda">&times;</button>
+          </div>
+        </div>
+        <div class="table-responsive">
+          <table>
+            <thead><tr><th>Documento</th><th>Paciente</th><th>Tipo</th><th class="text-right">Acciones</th></tr></thead>
+            <tbody>
+              <tr *ngFor="let d of documentosFiltrados">
+                <td><div class="patient-name">{{ d.titulo }}</div><div class="patient-sub">{{ d.archivo_url?.nombre || 'Sin archivo adjunto' }}</div></td>
+                <td>{{ nombreDe(d.paciente_id) }}</td>
+                <td><span class="badge-payment">{{ d.tipo }}</span></td>
+                <td class="text-right">
+                  <div class="table-actions">
+                    <ng-container *ngIf="d.archivo_url">
+                      <button type="button" class="action-btn" (click)="abrirDocumento(d, false)" title="Abrir el documento en una pestaña nueva">Ver</button>
+                      <button type="button" class="action-btn" (click)="abrirDocumento(d, true)">Descargar</button>
+                    </ng-container>
+                    <button type="button" class="delete-btn" (click)="eliminarDocumento(d)" [disabled]="guardando" title="Eliminar documento">
+                      <span aria-hidden="true">🗑</span> Eliminar
+                    </button>
+                  </div>
+                </td>
+              </tr>
+              <tr *ngIf="!documentosFiltrados.length">
+                <td colspan="4" class="empty-row">{{ searchDocumentos ? 'No se encontraron documentos para esa búsqueda.' : 'No hay documentos cargados todavía.' }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+
+    <div *ngIf="vistaActual === 'pagos'">
+      <section class="table-card">
+        <div class="table-header">
+          <div><h3>Cobros y honorarios</h3><p>{{ pagosFiltrados.length }} resultados · {{ pagosPendientesCount }} pendientes de cobro</p></div>
+          <div class="section-search">
+            <span aria-hidden="true">⌕</span>
+            <input type="search" name="buscarPagos" [(ngModel)]="searchPagos" placeholder="Buscar por nombre del paciente..."
+                   aria-label="Buscar cobros por paciente, concepto o estado">
+            <button *ngIf="searchPagos" type="button" class="search-clear" (click)="searchPagos = ''" aria-label="Limpiar búsqueda de cobros" title="Limpiar búsqueda">&times;</button>
+          </div>
+        </div>
+        <div class="table-responsive">
+          <table>
+            <thead><tr><th>Paciente</th><th>Concepto</th><th>Monto</th><th>Estado</th><th class="text-right">Acciones</th></tr></thead>
+            <tbody>
+              <tr *ngFor="let p of pagosFiltrados">
+                <td><div class="patient-name">{{ nombreDe(p.paciente_id) }}</div><div class="patient-sub">{{ p.metodo_pago || 'Sin método' }}</div></td>
+                <td>{{ p.concepto || 'Sesión' }}</td>
+                <td><strong>{{ moneda(p.monto) }}</strong></td>
+                <td><span class="badge-payment-status" [ngClass]="p.estado">{{ cap(p.estado) }}</span></td>
+                <td class="text-right">
+                  <div class="table-actions">
+                    <button type="button" class="pay-btn confirm" (click)="cambiarEstadoPago(p, 'confirmado')">Confirmar</button>
+                    <button type="button" class="pay-btn pending" (click)="cambiarEstadoPago(p, 'pendiente')">Pendiente</button>
+                    <button type="button" class="pay-btn cancel" (click)="cambiarEstadoPago(p, 'no pagado')">No pagado</button>
+                    <button type="button" class="delete-btn" (click)="eliminarPago(p)" [disabled]="guardando" title="Eliminar cobro">
+                      <span aria-hidden="true">🗑</span> Eliminar
+                    </button>
+                  </div>
+                </td>
+              </tr>
+              <tr *ngIf="!pagosFiltrados.length">
+                <td colspan="5" class="empty-row">{{ searchPagos ? 'No se encontraron cobros para esa búsqueda.' : 'No hay cobros registrados.' }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+
+  </main>
+
+  <div class="modal-backdrop" *ngIf="modal" (click)="cerrar()">
+    <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="modal-titulo" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3 id="modal-titulo">{{ tituloModal[modal] }}</h3>
+        <button type="button" class="close-btn" (click)="cerrar()" aria-label="Cerrar">&times;</button>
+      </div>
+
+      <form (ngSubmit)="guardar()" [ngSwitch]="modal">
+
+        <ng-container *ngSwitchCase="'paciente'">
+          <div class="form-row">
+            <div class="form-group"><label for="p-nom">Nombre *</label><input id="p-nom" name="nombre" [(ngModel)]="nuevoPaciente.nombre" placeholder="Ej. María"></div>
+            <div class="form-group"><label for="p-ape">Apellido *</label><input id="p-ape" name="apellido" [(ngModel)]="nuevoPaciente.apellido" placeholder="Ej. López"></div>
+          </div>
+          <div class="form-row">
+            <div class="form-group"><label for="p-dni">DNI</label><input id="p-dni" name="dni" inputmode="numeric" [(ngModel)]="nuevoPaciente.dni"></div>
+            <div class="form-group"><label for="p-tel">Teléfono</label><input id="p-tel" name="telefono" type="tel" [(ngModel)]="nuevoPaciente.telefono" placeholder="+54 9 11..."></div>
+          </div>
+          <div class="form-row">
+            <div class="form-group"><label for="p-nac">Fecha de nacimiento</label><input id="p-nac" name="nac" type="date" [(ngModel)]="nuevoPaciente.fecha_nacimiento"></div>
+            <div class="form-group"><label for="p-esc">Escolaridad / Ocupación</label><input id="p-esc" name="escolaridad" [(ngModel)]="nuevoPaciente.escolaridad" placeholder="Licenciatura, Primaria..."></div>
+          </div>
+          <p class="info-note" *ngIf="edadNuevo !== null">{{ edadNuevo }} años {{ edadNuevo < 18 ? ' (menor de edad)' : '' }}</p>
+          <div class="form-row" *ngIf="edadNuevo !== null && edadNuevo < 18">
+            <div class="form-group"><label for="p-tut">Nombre del tutor *</label><input id="p-tut" name="tutor" [(ngModel)]="nuevoPaciente.tutor_nombre"></div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="p-mod">Modalidad de pago</label>
+              <select id="p-mod" name="modalidad" [(ngModel)]="nuevoPaciente.modalidad_pago"><option>Particular</option><option>Obra social</option></select>
+            </div>
+            <div class="form-group" *ngIf="nuevoPaciente.modalidad_pago === 'Obra social'">
+              <label for="p-os">Obra social</label><input id="p-os" name="os" [(ngModel)]="nuevoPaciente.obra_social" placeholder="OSDE, Swiss Medical...">
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="p-est">Estado clínico</label>
+              <select id="p-est" name="estado" [(ngModel)]="nuevoPaciente.estado"><option>En tratamiento</option><option>Alta</option><option>Abandono</option></select>
+            </div>
+          </div>
+        </ng-container>
+
+        <ng-container *ngSwitchCase="'turno'">
+          <div class="form-row">
+            <div class="form-group">
+              <label for="t-pac">Paciente</label>
+              <select id="t-pac" name="paciente" [(ngModel)]="nuevoTurno.paciente_id">
+                <option value="" disabled>Elegí un paciente</option>
+                <option *ngFor="let p of pacientes" [value]="p.id">{{ p.apellido }}, {{ p.nombre }}</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group"><label for="t-fec">Fecha</label><input id="t-fec" name="fecha" type="date" [(ngModel)]="nuevoTurno.fecha"></div>
+            <div class="form-group"><label for="t-hor">Hora</label><input id="t-hor" name="hora" type="time" step="900" [(ngModel)]="nuevoTurno.hora"></div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="t-dur">Duración</label>
+              <select id="t-dur" name="duracion" [(ngModel)]="nuevoTurno.duracion">
+                <option [ngValue]="30">30 minutos</option><option [ngValue]="45">45 minutos</option>
+                <option [ngValue]="60">1 hora</option><option [ngValue]="90">1 hora y media</option>
+              </select>
+            </div>
+            <div class="form-group"><label for="t-obs">Observaciones</label><input id="t-obs" name="obs" [(ngModel)]="nuevoTurno.observaciones" placeholder="Opcional"></div>
+          </div>
+        </ng-container>
+
+        <ng-container *ngSwitchCase="'estadoPaciente'">
+          <p class="modal-description" *ngIf="pacienteEstado">
+            Actualizá el estado clínico de <strong>{{ pacienteEstado.nombre }} {{ pacienteEstado.apellido }}</strong>.
+          </p>
+          <div class="form-row">
+            <div class="form-group full-width">
+              <label for="p-estado-editar">Estado clínico</label>
+              <select id="p-estado-editar" name="estadoEditar" [(ngModel)]="estadoPacienteNuevo">
+                <option value="En tratamiento">En tratamiento</option>
+                <option value="Alta">Alta</option>
+                <option value="Abandono">Abandono</option>
+              </select>
+            </div>
+          </div>
+        </ng-container>
+
+        <ng-container *ngSwitchCase="'documento'">
+          <div class="form-row">
+            <div class="form-group">
+              <label for="d-pac">Paciente</label>
+              <select id="d-pac" name="paciente" [(ngModel)]="nuevoDoc.paciente_id">
+                <option value="" disabled>Elegí un paciente</option>
+                <option *ngFor="let p of pacientes" [value]="p.id">{{ p.apellido }}, {{ p.nombre }}</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group"><label for="d-tit">Título</label><input id="d-tit" name="titulo" [(ngModel)]="nuevoDoc.titulo" placeholder="Ej. Informe de evaluación"></div>
+            <div class="form-group">
+              <label for="d-tip">Tipo</label>
+              <select id="d-tip" name="tipo" [(ngModel)]="nuevoDoc.tipo"><option>Informe clínico</option><option>Evaluación</option><option>Estudio</option><option>Otro</option></select>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group"><label for="d-arc">Archivo (PDF o foto)</label><input id="d-arc" name="archivo" type="file" accept=".pdf,image/*" (change)="onArchivo($event)"></div>
+          </div>
+        </ng-container>
+
+        <ng-container *ngSwitchCase="'pago'">
+          <div class="form-row">
+            <div class="form-group">
+              <label for="g-pac">Paciente</label>
+              <select id="g-pac" name="paciente" [(ngModel)]="nuevoPago.paciente_id">
+                <option value="" disabled>Elegí un paciente</option>
+                <option *ngFor="let p of pacientes" [value]="p.id">{{ p.apellido }}, {{ p.nombre }}</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group"><label for="g-mon">Monto</label><input id="g-mon" name="monto" type="number" min="0" [(ngModel)]="nuevoPago.monto" placeholder="15000"></div>
+            <div class="form-group"><label for="g-con">Concepto</label><input id="g-con" name="concepto" [(ngModel)]="nuevoPago.concepto"></div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="g-met">Método de pago</label>
+              <select id="g-met" name="metodo" [(ngModel)]="nuevoPago.metodo_pago"><option>Efectivo</option><option>Transferencia</option><option>Tarjeta</option><option>Obra social</option></select>
+            </div>
+          </div>
+        </ng-container>
+
+        <p class="form-error" role="alert" *ngIf="error">{{ error }}</p>
+
+        <div class="modal-footer">
+          <button type="button" class="btn-secondary" (click)="cerrar()">Cancelar</button>
+          <button type="submit" class="btn-primary" [disabled]="guardando">{{ guardando ? 'Guardando...' : 'Guardar' }}</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="logout-overlay" *ngIf="loggingOut">
+    <div class="logout-box"><span class="spinner-large"></span><p>Cerrando sesión...</p></div>
+  </div>
+
+</div>

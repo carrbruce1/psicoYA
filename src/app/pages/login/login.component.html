@@ -1,0 +1,47 @@
+<div class="login-container">
+  <div class="login-card">
+    <div class="brand-header">
+      <div class="logo">Ψ</div>
+      <h1>PsicoYA</h1>
+      <p>{{ isLoginMode ? 'Inicia sesión en tu cuenta' : 'Registra tu cuenta profesional' }}</p>
+    </div>
+
+    <form (submit)="onSubmit()">
+      <!-- Campos extra para Registro -->
+      <div class="form-group" *ngIf="!isLoginMode">
+        <label>Nombre Completo</label>
+        <input type="text" [(ngModel)]="nombre" name="nombre" placeholder="Dra. Ana Gómez" required />
+      </div>
+
+      <div class="form-group" *ngIf="!isLoginMode">
+        <label>Matrícula Profesional</label>
+        <input type="text" [(ngModel)]="matricula" name="matricula" placeholder="MP 12345" required />
+      </div>
+
+      <div class="form-group">
+        <label>Correo Electrónico</label>
+        <input type="email" [(ngModel)]="email" name="email" placeholder="correo@ejemplo.com" required />
+      </div>
+
+      <div class="form-group">
+        <label>Contraseña</label>
+        <input type="password" [(ngModel)]="password" name="password" placeholder="••••••••" required />
+      </div>
+
+      <div class="error-alert" *ngIf="errorMessage">
+        {{ errorMessage }}
+      </div>
+
+      <button type="submit" class="btn-submit" [disabled]="loading">
+        {{ loading ? 'Procesando...' : (isLoginMode ? 'Entrar al Sistema' : 'Registrarse') }}
+      </button>
+    </form>
+
+    <div class="toggle-mode">
+      <p>
+        {{ isLoginMode ? '¿No tienes cuenta?' : '¿Ya tienes cuenta?' }}
+        <span (click)="toggleMode()">{{ isLoginMode ? 'Regístrate aquí' : 'Inicia sesión' }}</span>
+      </p>
+    </div>
+  </div>
+</div>
