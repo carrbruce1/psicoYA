@@ -1,9 +1,8 @@
-
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
-import { AuthService } from '../../guards/auth-guard';
+import { SupabaseService } from '../../service/supabase.service';
 
 @Component({
   selector: 'app-login',
@@ -24,7 +23,7 @@ export class LoginComponent {
   loading = false;
 
   constructor(
-    private authService: AuthService,
+    private supabaseService: SupabaseService,
     private router: Router
   ) {}
 
@@ -56,26 +55,26 @@ export class LoginComponent {
 
     try {
       if (this.isLoginMode) {
-        const { error } = await this.authService.signIn(
+        const { error } = await this.supabaseService.signIn(
           emailIngresado,
           this.password
         );
 
         if (error) {
-  console.log('Supabase devolvió el error de credenciales');
+          console.log('Supabase devolvió el error de credenciales');
 
-  this.errorMessage =
-    'El correo electrónico o la contraseña son incorrectos.';
+          this.errorMessage =
+            'El correo electrónico o la contraseña son incorrectos.';
 
-  this.loading = false;
+          this.loading = false;
 
-  return;
-}
+          return;
+        }
 
         await this.router.navigate(['/admin']);
 
       } else {
-        const { error } = await this.authService.signUp(
+        const { error } = await this.supabaseService.signUp(
           emailIngresado,
           this.password,
           this.nombre.trim(),

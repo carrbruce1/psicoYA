@@ -2,7 +2,7 @@ import { Component, HostListener, OnInit, ChangeDetectorRef } from '@angular/cor
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
-import { AuthService } from '../../guards/auth-guard';
+import { SupabaseService } from '../../service/supabase.service';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { environment } from '../../../environments/environment';
 
@@ -93,7 +93,7 @@ export class AdminPanelComponent implements OnInit {
   pacienteEstado: Paciente | null = null;
   estadoPacienteNuevo = 'En tratamiento';
 
-  constructor(private authService: AuthService, private router: Router, private cdr: ChangeDetectorRef) {
+  constructor(private supabaseService:SupabaseService, private router: Router, private cdr: ChangeDetectorRef) {
     this.supabase = createClient(environment.supabaseUrl, environment.supabaseKey);
   }
 
@@ -588,7 +588,7 @@ export class AdminPanelComponent implements OnInit {
     if (this.loggingOut) return;
     this.loggingOut = true;
     try {
-      await this.authService.signOut();
+      await this.supabaseService.signOut();
       await this.router.navigate(['/login']);
     } catch (e) {
       console.error('Error al cerrar sesión:', e);
