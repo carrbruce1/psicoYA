@@ -1,9 +1,23 @@
 import { Component } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { Router } from '@angular/router';
 
 @Component({
-  imports: [],
   selector: 'app-home',
-  styleUrl: './home.component.css',
+  standalone: true,
+  imports: [CommonModule],
   templateUrl: './home.component.html',
+  styleUrls: ['./home.component.css']
 })
-export class HomeComponent {}
+export class HomeComponent {
+
+  constructor(private router: Router) {}
+
+  irALogin() {
+    this.router.navigate(['/login']);
+  }
+
+  irARegistro() {
+    this.router.navigate(['/login']);
+  }
+}

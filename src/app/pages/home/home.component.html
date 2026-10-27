@@ -1,1 +1,72 @@
-<a href="/login">Login</a>
+<div class="home-container">
+  <!-- Header / Navbar -->
+  <header class="home-header">
+    <div class="brand">
+      <div class="brand-icon">Ψ</div>
+      <h2>PsicoYA</h2>
+    </div>
+    <div class="nav-actions">
+      <button class="btn-secondary" (click)="irALogin()">Iniciar Sesión</button>
+      <button class="btn-primary" (click)="irARegistro()">Registrarse</button>
+    </div>
+  </header>
+
+  <!-- Hero Section -->
+  <section class="hero-section">
+    <div class="hero-content">
+      <span class="badge-tag">Plataforma Clínica Integral</span>
+      <h1>Gestión profesional para psicólogos simplificada</h1>
+      <p>
+        Administra tus pacientes, organiza tu agenda de turnos, almacena informes de forma privada 
+        y lleva el control de tus cobros en un solo lugar y con la máxima seguridad.
+      </p>
+      <div class="hero-buttons">
+        <button class="btn-primary btn-large" (click)="irARegistro()">Comenzar Gratis</button>
+        <button class="btn-outline btn-large" (click)="irALogin()">Ya tengo cuenta</button>
+      </div>
+    </div>
+    <div class="hero-visual">
+      <div class="floating-card c-1">
+        <span class="dot active"></span> Pacientes Activos
+      </div>
+      <div class="floating-card c-2">
+        <span class="dot pending"></span> Turno Hoy - 15:00 hs
+      </div>
+      <div class="floating-card c-3">
+        <span class="dot success"></span> Cobro Confirmado
+      </div>
+    </div>
+  </section>
+
+  <!-- Features Section -->
+  <section class="features-section">
+    <h3>Todo lo que necesitas para tu consultorio</h3>
+    <div class="features-grid">
+      <div class="feature-card">
+        <div class="feature-icon blue">📅</div>
+        <h4>Agenda Inteligente</h4>
+        <p>Controla tus turnos diarios y mensuales evitando superposiciones de horarios.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon purple">👤</div>
+        <h4>Expediente de Pacientes</h4>
+        <p>Fichas clínicas completas, datos de obras sociales, menores de edad y tutores.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon green">📁</div>
+        <h4>Documentos Privados</h4>
+        <p>Sube informes clínicos y evaluaciones con almacenamiento seguro y cifrado.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon amber">💳</div>
+        <h4>Cobros y Honorarios</h4>
+        <p>Lleva el registro de pagos pendientes, métodos y confirmaciones al instante.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="home-footer">
+    <p>&copy; 2026 PsicoYA. Desarrollado para profesionales de la salud mental.</p>
+  </footer>
+</div>
