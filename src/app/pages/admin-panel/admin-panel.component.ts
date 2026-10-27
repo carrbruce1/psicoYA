@@ -133,7 +133,7 @@ export class AdminPanelComponent implements OnInit {
     if (pag.error) console.error('Error al cargar pagos:', pag.error);
     this.pacientes = (pac.data ?? []) as Paciente[];
     this.documentos = (inf.data ?? []) as Documento[];
-    this.pagos = (pag.data ?? []).map((p: any) => ({ ...p, paciente_id: p.pacientes_id, estado: p.estad })) as Pago[];
+    this.pagos = (pag.data ?? []) as Pago[];
     this.recalcular();
     await Promise.all([this.cargarTurnos(), this.cargarHoy()]);
     this.cdr.detectChanges();
@@ -514,18 +514,18 @@ export class AdminPanelComponent implements OnInit {
     this.error = '';
     try {
       const { data, error } = await this.supabase.from('pagos').insert({
-        pacientes_id: n.paciente_id,
+        paciente_id: n.paciente_id,
         psicologo_id: this.userId,
         monto,
         concepto: String(n.concepto ?? '').trim() || 'Sesión',
         metodo_pago: n.metodo_pago || 'Efectivo',
-        estad: 'pendiente'
+        estado: 'pendiente'
       }).select().single();
       if (error) {
         console.error('Error al guardar el pago:', error);
         return this.fallo('No se pudo guardar el cobro: ' + error.message);
       }
-      this.pagos = [{ ...data, paciente_id: data.pacientes_id, estado: data.estad } as Pago, ...this.pagos];
+      this.pagos = [data as Pago, ...this.pagos];
       this.recalcular();
       this.terminar();
     } catch (e) {
@@ -537,7 +537,7 @@ export class AdminPanelComponent implements OnInit {
   async cambiarEstadoPago(p: Pago, estado: EstadoPago) {
     const fecha_pago = estado === 'confirmado' ? new Date().toISOString() : null;
     try {
-      const { error } = await this.supabase.from('pagos').update({ estad: estado, fecha_pago }).eq('id', p.id).eq('psicologo_id', this.userId);
+      const { error } = await this.supabase.from('pagos').update({ estado, fecha_pago }).eq('id', p.id).eq('psicologo_id', this.userId);
       if (error) {
         console.error('Error al actualizar el pago:', error);
         return alert('No se pudo actualizar el pago: ' + error.message);
